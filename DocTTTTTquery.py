@@ -27,7 +27,7 @@ def extend_doc(doc: str, num_return_sequences=3, max_length=64, do_sample=True, 
 
 
 if __name__ == "__main__":
-    path = "/DATA/users/alinajafi/documentRanking/msmarco_v2_doc/"
+    path = "$ZipFiles Folder$"
     zip_files = os.listdir(path)
     number_files = len(zip_files)
     for index, zipfile in enumerate(zip_files):
@@ -38,7 +38,7 @@ if __name__ == "__main__":
                 doc_dict = json.loads(line)
                 doc_text = doc_dict["body"].split()
 
-                # need to split it and get the queries then concat
+                # need to do windowing and get the queries then concat
                 sub_docs = list(more_itertools.windowed(doc_text, n=512, step=510))
                 sub_docs = [" ".join(sub_doc).strip() for sub_doc in sub_docs]
                 results = [extend_doc(doc) for doc in sub_docs]
