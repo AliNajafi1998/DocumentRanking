@@ -3,6 +3,7 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 import os
 import json
 import gzip
+from pathlib import Path
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -88,6 +89,7 @@ if __name__ == "__main__":
                 output_lines += json.dumps(doc_dict) + "\n"
 
         # writing the extended documents to a new file
+        Path(os.getcwd() + "/extended_docs/").mkdir(parents=True, exist_ok=True)
         with open('extended_docs/' + zipfile.split('.')[0] + '.jsonl', 'w') as of:
             of.write(output_lines.strip())
         print(index + 1, zipfile, "is done!", number_files - index - 1, "left!")
