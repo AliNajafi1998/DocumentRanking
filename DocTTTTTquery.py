@@ -88,6 +88,6 @@ if __name__ == "__main__":
                 output_lines += json.dumps(doc_dict) + "\n"
 
         # writing the extended documents to a new file
-        with open(zipfile.split('.')[0], 'w') as of:
+        with open('extended_docs/' + zipfile.split('.')[0] + '.jsonl', 'w') as of:
             of.write(output_lines.strip())
         print(index + 1, zipfile, "is done!", number_files - index - 1, "left!")
