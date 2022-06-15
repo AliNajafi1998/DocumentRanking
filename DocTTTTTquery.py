@@ -82,7 +82,7 @@ if __name__ == "__main__":
             output_lines = ""
             for line in lines:
                 doc_dict = json.loads(line)
-                doc_text = doc_dict["body"].split()
+                doc_text = doc_dict["body"]
                 results = extend_doc(doc_text)
                 doc_dict["body"] = results
 
