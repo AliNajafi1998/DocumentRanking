@@ -74,7 +74,7 @@ def test_extend_doc():
 
 if __name__ == "__main__":
     path = "$ZipFiles Folder$"
-    zip_files = os.listdir(path)
+    zip_files = sorted(os.listdir(path))
     number_files = len(zip_files)
     for index, zipfile in enumerate(zip_files):
         with gzip.open(path + zipfile, 'rt', encoding='utf8') as f:
