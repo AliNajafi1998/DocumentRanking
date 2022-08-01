@@ -53,7 +53,10 @@ def search(query):
         headers = {'Content-Type': 'application/json'}
 
         res = requests.get(
-            f"http://elastic:{PASSWORD}@{HOSTNAME}:{PORT}/ms_marco/_search", headers=headers, data=query[0]).json()
+            f"http://elastic:{PASSWORD}@{HOSTNAME}:{PORT}/ms_marco/_search",
+            headers=headers,
+            data=query[0]
+        ).json()
 
         if res['hits']['hits']:
             with open(f'{OUTPUT_FILE_NAME}', 'a') as f:
