@@ -15,6 +15,8 @@ HOSTNAME = "localhost"
 PORT = 9200
 PASSWORD = "set your elastic password"
 RUN_NAME = "ELASTIC"
+OUTPUT_FILE_NAME = ""
+ERROR_FILE_NAME = ""
 
 # validating the number of documents
 res = requests.get(
@@ -40,7 +42,7 @@ def query_gen(q_id, q_text):
 
 
 def error_reporter(q_id):
-    with open("failed_q.txt", 'a') as ef:
+    with open(f"{ERROR_FILE_NAME}", 'a') as ef:
         ef.write(str(q_id)+'\n')
 
 
@@ -54,7 +56,7 @@ def search(query):
             f"http://elastic:{PASSWORD}@{HOSTNAME}:{PORT}/ms_marco/_search", headers=headers, data=query[0]).json()
 
         if res['hits']['hits']:
-            with open('train_top_1000.txt', 'a') as f:
+            with open(f'{OUTPUT_FILE_NAME}', 'a') as f:
                 for rank, hit in enumerate(res['hits']['hits']):
                     line = f'{q_id}\tQ0\t{hit["_id"]}\t{rank+1}\t{hit["_score"]}\t{RUN_NAME}\n'
                     f.write(line)
