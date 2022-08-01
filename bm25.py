@@ -1,19 +1,77 @@
-from rank_bm25 import BM25Okapi, BM25, BM25L, BM25Plus
+"""This script is for retrieving the top 1000 documents based on the queries"""
+
+# importing libs
+import requests
+
+import pandas as pd
+import re
+from tqdm import tqdm
+tqdm.pandas()
 
 
-class CustomBM25:
-    def __init__(self, corpus, bm25_type="okapi", tokenizer=str.split):
-        self.corpus = corpus
-        if bm25_type == 'bm25':
-            self.bm25 = BM25(corpus=corpus, tokenizer=tokenizer)
-        elif bm25_type == "okapi":
-            self.bm25 = BM25Okapi(corpus=corpus, tokenizer=tokenizer)
-        elif bm25_type == 'bm25l':
-            self.bm25 = BM25L(corpus=corpus, tokenizer=tokenizer)
-        elif bm25_type == 'bm25plus':
-            self.bm25 = BM25Plus(corpus=corpus, tokenizer=tokenizer)
+TOP_K = 1000
+INDEX_NAME = "ms_marco"
+HOSTNAME = "localhost"
+PORT = 9200
+PASSWORD = "set your elastic password"
+RUN_NAME = "ELASTIC"
+
+# validating the number of documents
+res = requests.get(
+    f"http://elastic:{PASSWORD}@{HOSTNAME}:{PORT}/{INDEX_NAME}/_count").json()
+assert res['count'] == 11959635
+
+
+# preparing the queries
+train_queries_path = "/home/ali_najafi/docv2_train_queries.tsv"
+
+train_df = pd.read_csv(train_queries_path, sep="\t", header=None).rename(
+    columns={0: "q_id", 1: "q_text"})
+print("train queries are loaded!")
+
+
+def query_gen(q_id, q_text):
+    q_text = re.sub(u"(\u2018|\u2019)", "'", q_text)
+    q_text = re.sub('[^A-Za-z0-9]+', ' ', q_text).strip()
+
+    MULTI_MATCH_QUERY = '{ "size":' + f'{TOP_K}' + ', "query": { "multi_match": { "query": ' + \
+        f'"{q_text}"'+', "fields": [ "title", "headings", "content" ] } }}'
+    return (MULTI_MATCH_QUERY, q_id)
+
+
+def error_reporter(q_id):
+    with open("failed_q.txt", 'a') as ef:
+        ef.write(str(q_id)+'\n')
+
+
+# searching
+def search(query):
+    q_id = query[1]
+    try:
+        headers = {'Content-Type': 'application/json'}
+
+        res = requests.get(
+            f"http://elastic:{PASSWORD}@{HOSTNAME}:{PORT}/ms_marco/_search", headers=headers, data=query[0]).json()
+
+        if res['hits']['hits']:
+            with open('train_top_1000.txt', 'a') as f:
+                for rank, hit in enumerate(res['hits']['hits']):
+                    line = f'{q_id}\tQ0\t{hit["_id"]}\t{rank+1}\t{hit["_score"]}\t{RUN_NAME}\n'
+                    f.write(line)
+
+            return q_id
         else:
-            raise Exception(f"There is no {bm25_type}")
+            error_reporter(q_id)
+    except:
+        error_reporter(q_id)
 
-    def get_top_k(self, query, k):
-        return self.bm25.get_top_n(query.split(), self.corpus, n=k)
+
+def bm25_search(q_id, q_text):
+    QUERY, Q_ID = query_gen(q_id, q_text)
+
+    result = search((QUERY, Q_ID))
+
+    return result
+
+
+train_df.progress_apply(lambda x: bm25_search(x['q_id'], x['q_text']), axis=1)
