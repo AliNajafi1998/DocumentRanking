@@ -25,11 +25,11 @@ assert res['count'] == 11959635
 
 
 # preparing the queries
-train_queries_path = "/home/ali_najafi/docv2_train_queries.tsv"
+queries_path = "somthing.tsv"
 
-train_df = pd.read_csv(train_queries_path, sep="\t", header=None).rename(
+df = pd.read_csv(queries_path, sep="\t", header=None).rename(
     columns={0: "q_id", 1: "q_text"})
-print("train queries are loaded!")
+print("Queries are loaded!")
 
 
 def query_gen(q_id, q_text):
@@ -79,4 +79,4 @@ def bm25_search(q_id, q_text):
     return result
 
 
-train_df.progress_apply(lambda x: bm25_search(x['q_id'], x['q_text']), axis=1)
+df.progress_apply(lambda x: bm25_search(x['q_id'], x['q_text']), axis=1)
