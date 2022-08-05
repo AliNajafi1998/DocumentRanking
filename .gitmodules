@@ -1,0 +1,3 @@
+[submodule "pygaggle"]
+	path = pygaggle
+	url = https://github.com/AliNajafi1998/pygaggle
