@@ -1,11 +1,13 @@
-from pygaggle.rerank.base import Query, Text
-from pygaggle.rerank.transformer import MonoT5
+# import modules
+from pygaggle.pygaggle.rerank.base import Query, Text
+from pygaggle.pygaggle.rerank.transformer import MonoT5
 
 # initializing the Model
 reranker = MonoT5()
 
 
 # need to read the queries
+
 
 # need to read the retrieved quries
 
