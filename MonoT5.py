@@ -34,7 +34,7 @@ def get_document(document_id):
     (string1, string2, bundlenum, position) = document_id.split('_')
     assert string1 == 'msmarco' and string2 == 'doc'
  
-    with gzip.open(f'./data/msmarco_v2_doc/msmarco_doc_{bundlenum}.gz', 'rt', encoding='utf8') as in_fh:
+    with gzip.open(f'/DATA/users/alinajafi/MSMARCO_DOC_2022/msmarco_v2_doc/msmarco_doc_{bundlenum}.gz', 'rt', encoding='utf8') as in_fh:
         in_fh.seek(int(position))
         json_string = in_fh.readline()
         document = json.loads(json_string)
@@ -45,7 +45,6 @@ def get_windows(text, window_size = 512,stride = 211):
     tokens = text.split()
     start = 0
     total_length = len(tokens)
-    print(total_length)
     flag = True
     chunks = []
     while flag:
@@ -59,10 +58,11 @@ def get_windows(text, window_size = 512,stride = 211):
         start = start + stride
     return chunks
          
-
+x = 0
 for q_id, doc_ids in q_docs.items():
     query = Query(id2query[q_id])
-    for document_id in tqdm(doc_ids,leave=True):
+    rel_counter = 0
+    for document_id in tqdm(doc_ids[:150],leave=True):
         # keys = 'url', 'title', 'headings', 'body', 'docid'
         document_data = get_document(document_id) 
         doc = document_data['title'] +  ", " + document_data['headings'] + ", " + document_data['body']
@@ -70,5 +70,23 @@ for q_id, doc_ids in q_docs.items():
         chunks = [Text(text, {'docid': document_id + f"_{index}"}, 0)  for index,text in enumerate(chunks)]
         reranked = reranker.rerank(query, chunks)
 
+        have_result = False
+        score = -1
         for i in range(len(reranked)):
-            print(f'{i+1:2} {reranked[i].metadata["docid"]:15} {reranked[i].score:.5f} {reranked[i].metadata["result"]}')
+            if int(reranked[i].metadata["result"]) == 1:
+                # print(f'{i+1:2} {reranked[i].metadata["docid"]:15} {reranked[i].score:.5f} {reranked[i].metadata["result"]}')
+                score = reranked[i].score
+                have_result = True
+                rel_counter += 1
+                break
+
+        if have_result == True:
+            with open("results.tsv","a") as of:
+                out_text = f"{q_id}\tQ0{document_id}\t{score}\tMonoT5\n"
+                of.write(out_text)
+        if rel_counter == 150:
+            break
+        
+    if x == 3:
+        break
+    x += 1
