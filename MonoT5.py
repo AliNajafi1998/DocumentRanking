@@ -9,39 +9,40 @@ reranker = MonoT5()
 
 # loading queries
 QUERY_FILE = "./data/2022_queries.tsv"
-with open(QUERY_FILE,'r') as qf:
+with open(QUERY_FILE, 'r') as qf:
     lines = qf.readlines()
     lines = [line.split() for line in lines]
-    id2query = {line[0]:line[1] for line in lines}
+    id2query = {line[0]: line[1] for line in lines}
 
 
 # loading query's candidates
-QUERY_RET_DOC_FILE = "./data/test_top_1k.tsv" 
+QUERY_RET_DOC_FILE = "./data/test_top_1k.tsv"
 q_docs = {}
-with open(QUERY_RET_DOC_FILE,'r') as qtf:
+with open(QUERY_RET_DOC_FILE, 'r') as qtf:
     lines = qtf.readlines()
-    for i in range(0,len(lines),1000):        
+    for i in range(0, len(lines), 1000):
         docs = lines[i:i+1000]
         q_id = docs[0].split('\t')[0]
         docs = [line.split('\t')[2] for line in docs]
         q_docs[q_id] = docs
 
- 
+
 def get_document(document_id):
     """
     :return : dict_keys(['url', 'title', 'headings', 'body', 'docid'])
     """
     (string1, string2, bundlenum, position) = document_id.split('_')
     assert string1 == 'msmarco' and string2 == 'doc'
- 
+
     with gzip.open(f'/DATA/users/alinajafi/MSMARCO_DOC_2022/msmarco_v2_doc/msmarco_doc_{bundlenum}.gz', 'rt', encoding='utf8') as in_fh:
         in_fh.seek(int(position))
         json_string = in_fh.readline()
         document = json.loads(json_string)
         assert document['docid'] == document_id
         return document
- 
-def get_windows(text, window_size = 512,stride = 211):
+
+
+def get_windows(text, window_size=512, stride=211):
     tokens = text.split()
     start = 0
     total_length = len(tokens)
@@ -53,21 +54,24 @@ def get_windows(text, window_size = 512,stride = 211):
             flag = False
             end = total_length
 
-        chunks.append(tokens[start:end]) 
-        
+        chunks.append(tokens[start:end])
+
         start = start + stride
     return chunks
-         
+
+
 x = 0
 for q_id, doc_ids in q_docs.items():
     query = Query(id2query[q_id])
     rel_counter = 0
-    for document_id in tqdm(doc_ids[:150],leave=True):
+    for document_id in tqdm(doc_ids[:150], leave=True):
         # keys = 'url', 'title', 'headings', 'body', 'docid'
-        document_data = get_document(document_id) 
-        doc = document_data['title'] +  ", " + document_data['headings'] + ", " + document_data['body']
-        chunks = get_windows(doc,window_size=510,stride=510)
-        chunks = [Text(text, {'docid': document_id + f"_{index}"}, 0)  for index,text in enumerate(chunks)]
+        document_data = get_document(document_id)
+        doc = document_data['title'] + ", " + \
+            document_data['headings'] + ", " + document_data['body']
+        chunks = get_windows(doc, window_size=510, stride=510)
+        chunks = [Text(text, {'docid': document_id + f"_{index}"}, 0)
+                  for index, text in enumerate(chunks)]
         reranked = reranker.rerank(query, chunks)
 
         have_result = False
@@ -81,12 +85,12 @@ for q_id, doc_ids in q_docs.items():
                 break
 
         if have_result == True:
-            with open("results.tsv","a") as of:
+            with open("results.tsv", "a") as of:
                 out_text = f"{q_id}\tQ0{document_id}\t{score}\tMonoT5\n"
                 of.write(out_text)
         if rel_counter == 150:
             break
-        
+
     if x == 3:
         break
     x += 1
